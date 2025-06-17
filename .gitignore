@@ -1,0 +1,22 @@
+# .gitignore
+
+# Ignore virtual environment
+venv/
+.env/
+
+# Ignore output data
+*.mp4
+*.avi
+*.mov
+masks/
+masks_auto/
+output/
+frames/
+
+# Ignore models if not under version control
+models/
+*.pth
+
+# Python cache
+__pycache__/
+*.pyc 

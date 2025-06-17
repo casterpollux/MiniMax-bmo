@@ -1,0 +1,29 @@
+# BMO MiniMax-Remover Requirements for ComfyUI
+# High-quality video object removal dependencies
+
+# NOTE: Install PyTorch with CUDA support first:
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# Core ML/AI Libraries
+diffusers>=0.28.0
+transformers>=4.40.0
+accelerate>=0.21.0
+
+# Tensor Operations
+einops>=0.7.0
+scipy>=1.11.0
+
+# Image/Video Processing  
+numpy>=1.24.0
+opencv-python>=4.8.0
+pillow>=10.0.0
+
+# Utilities
+tqdm>=4.65.0
+
+# Optional (for enhanced functionality)
+xformers  # For memory efficiency (optional)
+bitsandbytes  # For model quantization (optional)
+
+# Note: ComfyUI should already provide most of these dependencies
+# This file ensures compatibility for standalone usage 
