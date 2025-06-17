@@ -14,9 +14,11 @@ This is the **BMO** implementation of MiniMax-Remover for ComfyUI that delivers 
 
 ## 📥 Installation
 
+***CLONE THE REPO***
+
 ### Method 1: Automatic Setup (Recommended)
 
-1. Run the setup script:
+1. Run the setup script: this will move all the files you need directly into you comfy ui custom nodes section for you. 
 ```bash
 python setup_comfyui_integration_bmo.py
 ```
@@ -33,6 +35,16 @@ ComfyUI/custom_nodes/minimax-remover-bmo/
 ├── minimax_mask_node_bmo.py
 ├── pipeline_minimax_remover_bmo.py
 └── transformer_minimax_remover.py
+└──Models
+   ├── vae/
+   │   ├── config.json
+   │   └── diffusion_pytorch_model.safetensors
+   ├── transformer/
+   │   ├── config.json
+   │   └── diffusion_pytorch_model.safetensors
+   └── scheduler/
+       └── scheduler_config.json
+
 ```
 
 2. Restart ComfyUI
@@ -55,9 +67,9 @@ ComfyUI/custom_nodes/minimax-remover-bmo/
 
 4. **Run**: The output will be clean, natural-looking inpainting!
 
-### Model Setup
+### Model Setup (also shown above with main files)
 
-Place your MiniMax-Remover models in this structure and paste the path into the comfy ui node:
+Place your MiniMax-Remover models in the same custom nodes section as your main files from installation above:
 ```
 ComfyUI/custom_nodes/minimax-remover-bmo/models
 ├── vae/
