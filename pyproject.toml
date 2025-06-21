@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "comfyui-minimax-remover"
+description = "High-quality video object removal for ComfyUI using MiniMax optimization"
+version = "1.0.0"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = ["comfyui", "video", "inpainting", "object-removal", "minimax"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "torch>=2.0.0,<2.5.0",
+    "torchvision>=0.15.0,<0.20.0",
+    "diffusers>=0.21.0",
+    "transformers>=4.25.0",
+    "numpy>=1.24.0",
+    "opencv-python>=4.5.0,<5.0.0",
+    "pillow>=9.0.0",
+    "tqdm>=4.64.0",
+    "decord>=0.6.0",
+    "segment-anything>=1.0",
+    "scipy>=1.9.0",
+    "einops>=0.6.0",
+    "accelerate>=0.20.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/YOUR_USERNAME/ComfyUI-MiniMax-Remover"
+Repository = "https://github.com/YOUR_USERNAME/ComfyUI-MiniMax-Remover"
+Documentation = "https://github.com/YOUR_USERNAME/ComfyUI-MiniMax-Remover#readme"
+"Bug Reports" = "https://github.com/YOUR_USERNAME/ComfyUI-MiniMax-Remover/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+exclude = ["test*", "tests*", "__pycache__*", "*.pyc", "minimax-env*"]
+
+[comfyui]
+# ComfyUI specific metadata
+PublisherId = "your-publisher-id"
+DisplayName = "MiniMax-Remover"
+Description = "High-quality video object removal using MiniMax optimization. Fast 6-step inference with professional results."
+Version = "1.0.0"
+Icon = ""
+Tags = ["video", "inpainting", "object-removal", "minimax", "diffusion"] 

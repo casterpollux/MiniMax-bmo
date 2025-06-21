@@ -4,6 +4,8 @@ BMO MiniMax-Remover ComfyUI Node
 High-quality video object removal - based on official implementation
 """
 
+import os
+import sys
 import torch
 import numpy as np
 import cv2
@@ -12,8 +14,6 @@ import folder_paths
 import comfy.model_management as model_management
 
 # Import the BMO pipeline
-import os
-import sys
 from pathlib import Path
 
 # Add current directory to path for imports
@@ -48,8 +48,10 @@ try:
     # ComfyUI imports
     import comfy.model_management as model_management
     print("✅ ComfyUI model_management imported successfully")
-except ImportError as e:
-    print(f"⚠️ Could not import ComfyUI model_management: {e}")
+    COMFYUI_AVAILABLE = True
+except ImportError:
+    print(f"⚠️ Could not import ComfyUI model_management")
+    COMFYUI_AVAILABLE = False
     # Fallback device management
     class MockModelManagement:
         @staticmethod
@@ -94,6 +96,18 @@ except ImportError as e:
     if not imported:
         raise ImportError("Could not import BMO pipeline modules from any location")
 
+# Lazy imports for diffusers components
+def lazy_import_diffusers():
+    """Lazy import diffusers components to avoid import issues"""
+    global AutoencoderKLWan, UniPCMultistepScheduler, Minimax_Remover_Pipeline_BMO, Transformer3DModel
+    
+    if 'AutoencoderKLWan' not in globals():
+        from diffusers.models import AutoencoderKLWan
+        from diffusers.schedulers import UniPCMultistepScheduler
+        from pipeline_minimax_remover_bmo import Minimax_Remover_Pipeline_BMO
+        from transformer_minimax_remover import Transformer3DModel
+    
+    return AutoencoderKLWan, UniPCMultistepScheduler, Minimax_Remover_Pipeline_BMO, Transformer3DModel
 
 class MinimaxRemoverBMONode:
     """
@@ -106,6 +120,95 @@ class MinimaxRemoverBMONode:
         self.device = model_management.get_torch_device()
         self.comfyui_models_path = Path(comfyui_base) / "models"
         
+    def auto_download_models(self, force_download=False):
+        """
+        Automatically download models if they don't exist
+        Returns the paths to the downloaded models
+        """
+        print("🔍 Checking for MiniMax-Remover models...")
+        
+        # Standard model locations to try
+        possible_locations = [
+            # Project directory
+            Path("models"),
+            # ComfyUI models directory  
+            self.comfyui_models_path,
+            # User's cache directory
+            Path.home() / ".cache" / "minimax-remover"
+        ]
+        
+        # Check if models already exist
+        for base_path in possible_locations:
+            vae_path = base_path / "vae"
+            transformer_path = base_path / "transformer" 
+            scheduler_path = base_path / "scheduler"
+            
+            if (vae_path.exists() and transformer_path.exists() and scheduler_path.exists() and
+                (vae_path / "config.json").exists() and 
+                (transformer_path / "config.json").exists() and
+                (scheduler_path / "scheduler_config.json").exists()):
+                
+                print(f"✅ Found existing models at: {base_path}")
+                return str(vae_path), str(transformer_path), str(scheduler_path)
+        
+        if not force_download:
+            print("📥 Models not found locally. Starting automatic download...")
+        
+        # Choose download location (prefer project directory, fallback to cache)
+        download_base = Path("models")
+        if not download_base.parent.exists() or not os.access(download_base.parent, os.W_OK):
+            download_base = Path.home() / ".cache" / "minimax-remover" / "models"
+            print(f"📁 Using cache directory for models: {download_base}")
+        
+        download_base.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            print(f"🌐 Downloading MiniMax-Remover models to: {download_base}")
+            print(f"📊 Expected download size: ~25-30 GB")
+            print(f"⏳ This may take several minutes depending on your connection...")
+            
+            # Import huggingface_hub for downloading
+            try:
+                from huggingface_hub import snapshot_download
+            except ImportError:
+                print("❌ huggingface_hub not found. Installing...")
+                import subprocess
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "huggingface_hub"])
+                from huggingface_hub import snapshot_download
+            
+            # Download with progress
+            snapshot_download(
+                repo_id="zibojia/minimax-remover",
+                local_dir=str(download_base),
+                local_dir_use_symlinks=False,
+                allow_patterns=["vae/*", "transformer/*", "scheduler/*"],
+                ignore_patterns=["*.git*", "README.md", "*.txt"]
+            )
+            
+            # Verify download
+            vae_path = download_base / "vae"
+            transformer_path = download_base / "transformer"
+            scheduler_path = download_base / "scheduler"
+            
+            if (vae_path.exists() and transformer_path.exists() and scheduler_path.exists()):
+                print("🎉 Models downloaded successfully!")
+                print(f"📁 VAE: {vae_path}")
+                print(f"📁 Transformer: {transformer_path}")  
+                print(f"📁 Scheduler: {scheduler_path}")
+                return str(vae_path), str(transformer_path), str(scheduler_path)
+            else:
+                raise Exception("Download completed but models not found in expected locations")
+                
+        except Exception as e:
+            print(f"❌ Auto-download failed: {e}")
+            print("\n🔧 Manual download options:")
+            print("1. Run: python download_models.py")
+            print("2. Run: huggingface-cli download zibojia/minimax-remover --local-dir ./models")
+            print("3. See MODEL_DOWNLOAD_GUIDE.md for detailed instructions")
+            
+            # Return default paths so user can manually configure
+            return "models/vae/", "models/transformer/", "models/scheduler/"
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -132,20 +235,26 @@ class MinimaxRemoverBMONode:
                     "max": 0xffffffffffffffff,
                     "display": "number"
                 }),
+            },
+            "optional": {
+                "auto_download": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Automatically download models if not found"
+                }),
                 "vae_path": ("STRING", {
-                    "default": "models/vae/",
+                    "default": "auto",
                     "multiline": False,
-                    "tooltip": "Path to VAE model directory"
+                    "tooltip": "Path to VAE model directory (auto = automatic detection)"
                 }),
                 "transformer_path": ("STRING", {
-                    "default": "models/transformer/",
+                    "default": "auto",
                     "multiline": False,
-                    "tooltip": "Path to Transformer model directory"
+                    "tooltip": "Path to Transformer model directory (auto = automatic detection)"
                 }),
                 "scheduler_path": ("STRING", {
-                    "default": "models/scheduler/",
+                    "default": "auto",
                     "multiline": False,
-                    "tooltip": "Path to Scheduler config directory"
+                    "tooltip": "Path to Scheduler config directory (auto = automatic detection)"
                 }),
             }
         }
@@ -191,8 +300,8 @@ class MinimaxRemoverBMONode:
         print(f"⚠️ Using fallback path for {model_type}: {path}")
         return str(path)
 
-    def load_models(self, vae_path: str, transformer_path: str, scheduler_path: str):
-        """Load MiniMax-Remover models from paths"""
+    def load_models(self, vae_path: str, transformer_path: str, scheduler_path: str, auto_download: bool = True):
+        """Load MiniMax-Remover models from paths with auto-download support"""
         if self.pipe is not None:
             print("ℹ️ Models already loaded, skipping...")
             return  # Already loaded
@@ -200,6 +309,29 @@ class MinimaxRemoverBMONode:
         print("🔄 Loading BMO MiniMax-Remover models...")
         print(f"🗂️ ComfyUI base path: {comfyui_base}")
         print(f"🗂️ ComfyUI models path: {self.comfyui_models_path}")
+        
+        # Handle auto-download and path resolution
+        if auto_download and (vae_path == "auto" or transformer_path == "auto" or scheduler_path == "auto"):
+            print("🤖 Auto-download mode enabled")
+            try:
+                auto_vae, auto_transformer, auto_scheduler = self.auto_download_models()
+                
+                # Use auto-detected paths for "auto" values
+                if vae_path == "auto":
+                    vae_path = auto_vae
+                if transformer_path == "auto":
+                    transformer_path = auto_transformer
+                if scheduler_path == "auto":
+                    scheduler_path = auto_scheduler
+                    
+                print(f"🎯 Auto-resolved paths:")
+                print(f"   VAE: {vae_path}")
+                print(f"   Transformer: {transformer_path}")
+                print(f"   Scheduler: {scheduler_path}")
+                
+            except Exception as e:
+                print(f"⚠️ Auto-download failed, falling back to manual paths: {e}")
+                # Keep original paths if auto-download fails
         
         try:
             # Resolve model paths
@@ -211,7 +343,29 @@ class MinimaxRemoverBMONode:
             print(f"📁 Loading Transformer from: {resolved_transformer_path}")
             print(f"📁 Loading Scheduler from: {resolved_scheduler_path}")
             
+            # Check if paths exist before attempting to load
+            missing_paths = []
+            for name, path in [("VAE", resolved_vae_path), ("Transformer", resolved_transformer_path), ("Scheduler", resolved_scheduler_path)]:
+                if not Path(path).exists():
+                    missing_paths.append(f"{name}: {path}")
+            
+            if missing_paths:
+                print(f"❌ Missing model paths:")
+                for missing in missing_paths:
+                    print(f"   {missing}")
+                
+                if auto_download:
+                    print("🔄 Attempting to re-download missing models...")
+                    auto_vae, auto_transformer, auto_scheduler = self.auto_download_models(force_download=True)
+                    resolved_vae_path = auto_vae
+                    resolved_transformer_path = auto_transformer
+                    resolved_scheduler_path = auto_scheduler
+                else:
+                    raise FileNotFoundError(f"Models not found. Enable auto_download or check paths.")
+            
             # Load models from resolved paths
+            AutoencoderKLWan, UniPCMultistepScheduler, Minimax_Remover_Pipeline_BMO, Transformer3DModel = lazy_import_diffusers()
+            
             vae = AutoencoderKLWan.from_pretrained(
                 resolved_vae_path, 
                 torch_dtype=torch.float16
@@ -259,12 +413,13 @@ class MinimaxRemoverBMONode:
         num_inference_steps=12,
         iterations=6,
         seed=42,
-        vae_path="models/vae/",
-        transformer_path="models/transformer/",
-        scheduler_path="models/scheduler/"
+        auto_download=True,
+        vae_path="auto",
+        transformer_path="auto",
+        scheduler_path="auto"
     ):
         """
-        Process video with BMO MiniMax-Remover
+        Process video with BMO MiniMax-Remover with auto-download support
         
         Args:
             images: Input video frames [B, H, W, C] in [0, 1]
@@ -272,16 +427,17 @@ class MinimaxRemoverBMONode:
             num_inference_steps: Number of denoising steps (official default: 12)
             iterations: Mask expansion iterations (official default: 6)
             seed: Random seed for reproducible results
-            vae_path: Path to VAE model directory
-            transformer_path: Path to Transformer model directory
-            scheduler_path: Path to Scheduler config directory
+            auto_download: Automatically download models if not found
+            vae_path: Path to VAE model directory (auto = automatic detection)
+            transformer_path: Path to Transformer model directory (auto = automatic detection)
+            scheduler_path: Path to Scheduler config directory (auto = automatic detection)
             
         Returns:
             Processed video frames [B, H, W, C] in [0, 1]
         """
         
-        # Load models
-        self.load_models(vae_path, transformer_path, scheduler_path)
+        # Load models with auto-download support
+        self.load_models(vae_path, transformer_path, scheduler_path, auto_download)
         
         print("🚀 Running BMO MiniMax-Remover")
         print("=" * 50)
@@ -292,7 +448,13 @@ class MinimaxRemoverBMONode:
         
         print(f"📐 Input: {images.shape} frames, {masks.shape} masks")
         print(f"🎯 Parameters: steps={num_inference_steps}, iterations={iterations}, seed={seed}")
-        print(f"🗂️ Model paths: VAE={vae_path}, Transformer={transformer_path}, Scheduler={scheduler_path}")
+        print(f"🤖 Auto-download: {'enabled' if auto_download else 'disabled'}")
+        
+        # Show resolved paths
+        if vae_path == "auto" or transformer_path == "auto" or scheduler_path == "auto":
+            print(f"🗂️ Using auto-detected model paths")
+        else:
+            print(f"🗂️ Model paths: VAE={vae_path}, Transformer={transformer_path}, Scheduler={scheduler_path}")
         
         # Prepare images: ComfyUI [B, H, W, C] -> MiniMax [F, H, W, C] -> [-1, 1]
         images_np = images.detach().cpu().numpy()  # [B, H, W, C] in [0, 1]
@@ -369,6 +531,89 @@ class MinimaxRemoverBMONode:
             traceback.print_exc()
             # Return original images as fallback
             return (images,)
+
+    def diagnose_inputs(self, images, masks):
+        """
+        Diagnostic function to check input compatibility
+        Helps users identify potential dimension issues before processing
+        """
+        print("🔍 DIAGNOSTIC MODE: Analyzing inputs for compatibility")
+        print("=" * 60)
+        
+        # Analyze images
+        if images is None:
+            print("❌ ERROR: Images tensor is None")
+            return False
+        
+        print(f"📊 Images analysis:")
+        print(f"   Shape: {images.shape}")
+        print(f"   Type: {type(images)}")
+        print(f"   Data type: {images.dtype if hasattr(images, 'dtype') else 'N/A'}")
+        print(f"   Range: [{images.min():.3f}, {images.max():.3f}]" if hasattr(images, 'min') else "")
+        
+        if len(images.shape) != 4:
+            print(f"❌ ERROR: Expected 4D tensor [B, H, W, C], got {len(images.shape)}D")
+            return False
+        
+        batch_size, height, width, channels = images.shape
+        print(f"   Frames: {batch_size}")
+        print(f"   Resolution: {height}x{width}")
+        print(f"   Channels: {channels}")
+        
+        # Analyze masks
+        if masks is None:
+            print("❌ ERROR: Masks tensor is None")
+            return False
+        
+        print(f"\n Masks analysis:")
+        print(f"   Shape: {masks.shape}")
+        print(f"   Type: {type(masks)}")
+        print(f"   Data type: {masks.dtype if hasattr(masks, 'dtype') else 'N/A'}")
+        print(f"   Range: [{masks.min():.3f}, {masks.max():.3f}]" if hasattr(masks, 'min') else "")
+        
+        # Check dimension compatibility
+        print(f"\n🔧 Compatibility analysis:")
+        
+        # VAE spatial compatibility
+        vae_h = ((height + 7) // 8) * 8
+        vae_w = ((width + 7) // 8) * 8
+        if height == vae_h and width == vae_w:
+            print(f"   ✅ Resolution {height}x{width} is VAE-compatible")
+        else:
+            print(f"   ⚠️ Resolution {height}x{width} will be adjusted to {vae_h}x{vae_w} for VAE compatibility")
+        
+        # Temporal compatibility
+        vae_scale_factor_temporal = 4  # Default value
+        temporal_latent_frames = (batch_size - 1) // vae_scale_factor_temporal + 1
+        print(f"   📊 Temporal: {batch_size} frames → {temporal_latent_frames} latent frames")
+        
+        # Check common issues
+        issues = []
+        
+        if channels != 3:
+            issues.append(f"Expected 3 channels (RGB), got {channels}")
+        
+        if batch_size < 1:
+            issues.append(f"Invalid frame count: {batch_size}")
+        
+        if len(masks.shape) not in [3, 4]:
+            issues.append(f"Masks should be 3D [F,H,W] or 4D [F,H,W,1], got {len(masks.shape)}D")
+        
+        if len(masks.shape) == 3 and masks.shape != (batch_size, height, width):
+            issues.append(f"Mask shape {masks.shape} doesn't match image frames")
+        
+        if len(masks.shape) == 4 and masks.shape != (batch_size, height, width, 1):
+            issues.append(f"Mask shape {masks.shape} doesn't match expected [F,H,W,1]")
+        
+        # Report results
+        if issues:
+            print(f"\n❌ ISSUES DETECTED:")
+            for i, issue in enumerate(issues, 1):
+                print(f"   {i}. {issue}")
+            return False
+        else:
+            print(f"\n✅ ALL CHECKS PASSED - Inputs are compatible!")
+            return True
 
 
 # ComfyUI Node Mappings
