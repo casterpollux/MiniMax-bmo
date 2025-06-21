@@ -3,9 +3,9 @@
 
 # Core ML/AI Libraries
 # Pinned versions for stability.
-diffusers==0.28.0
+diffusers==0.33.1
 transformers==4.41.2
-accelerate==0.29.3
+accelerate==0.30.1
 
 # Tensor Operations
 einops==0.7.0
