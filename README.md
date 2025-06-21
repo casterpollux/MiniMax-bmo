@@ -8,13 +8,13 @@
   <a href="https://arxiv.org/abs/2505.24873"><img alt="arXiv" src="https://img.shields.io/badge/MiniMaxRemover-arXiv-b31b1b"></a>
 </p>
 
-!(https://github.com/casterpollux/MiniMax-bmo/blob/main/jet.gif)
+![demo 1](https://github.com/casterpollux/MiniMax-bmo/blob/main/jet.gif)
 
-!(https://github.com/casterpollux/MiniMax-bmo/blob/main/man.gif)
+![demo 2](https://github.com/casterpollux/MiniMax-bmo/blob/main/man.gif)
 
-!(https://github.com/casterpollux/MiniMax-bmo/blob/main/ocean.gif)
+![demo 3](https://github.com/casterpollux/MiniMax-bmo/blob/main/ocean.gif)
 
-!(https://github.com/casterpollux/MiniMax-bmo/blob/main/racoon.gif)
+![demo 4](https://github.com/casterpollux/MiniMax-bmo/blob/main/racoon.gif)
 
 
 
