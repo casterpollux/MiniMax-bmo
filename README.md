@@ -14,13 +14,12 @@
 
 ### ✨ **Latest Enhancements**
 - ✅ **Auto-Download Models**: Zero-configuration setup - models download automatically on first use
-- ✅ **Universal Resolution Support**: Works with ANY resolution input (480p to 4K+) 
+- ✅ **Universal Resolution Support**: Works with ANY resolution input (480p to 4K+)
 - ✅ **Smart VAE Compatibility**: Automatic dimension adjustment for perfect compatibility
 - ✅ **OpenCV Conflict Resolution**: No more OpenCV reinstallation issues
 - ✅ **DW Preprocessor Compatibility**: Works seamlessly with DWPose and other preprocessors
 - ✅ **Tensor Dimension Fixes**: Eliminates all dimension mismatch errors
 - ✅ **Professional Quality**: Proper VAE normalization for natural, high-quality results
-- ⚠️Pending GPU times will vary dramatically. 720p runs on an A6000 in about 2-3 minutes. Vertical formats and the larger the area to inpaint will increase time to process
 
 ### 🎮 **Core Features**
 - **Fast**: Only 6-12 inference steps, highly optimized
@@ -79,11 +78,32 @@ When you first use the node:
 - **Source**: [HuggingFace: zibojia/minimax-remover](https://huggingface.co/zibojia/minimax-remover)
 
 ### **Storage Locations (Auto-Detected)**
-The system automatically tries these locations:
+The system automatically tries these locations in priority order:
 
-1. **Project Directory**: `MiniMax-Remover/models/`
-2. **ComfyUI Models**: `ComfyUI/models/`
-3. **User Cache**: `~/.cache/minimax-remover/`
+#### **Option 1: Custom Node Directory (Default)**
+```
+ComfyUI/custom_nodes/MiniMax-Remover/models/
+├── minimax_vae/          (VAE encoder/decoder)
+├── minimax_transformer/  (main diffusion model)
+└── minimax_scheduler/    (denoising scheduler)
+```
+
+#### **Option 2: ComfyUI Models Directory**
+```
+ComfyUI/models/
+├── minimax_vae/          (MiniMax VAE models)
+├── minimax_transformer/  (MiniMax Transformer models)
+└── minimax_scheduler/    (MiniMax Scheduler configs)
+```
+
+#### **Option 3: User Cache Directory (Fallback)**
+```
+~/.cache/minimax-remover/models/
+├── minimax_vae/
+├── minimax_transformer/
+└── minimax_scheduler/
+```
+*Windows: `C:\Users\[Username]\.cache\minimax-remover\models\`*
 
 ### **Manual Download Options**
 If auto-download fails or you prefer manual control:
@@ -94,9 +114,17 @@ python download_models.py
 
 # Option 2: Direct HuggingFace download
 huggingface-cli download zibojia/minimax-remover --local-dir ./models --local-dir-use-symlinks False
+# Then rename folders for clarity:
+mv ./models/vae ./models/minimax_vae
+mv ./models/transformer ./models/minimax_transformer  
+mv ./models/scheduler ./models/minimax_scheduler
 
 # Option 3: Download to ComfyUI models directory  
 huggingface-cli download zibojia/minimax-remover --local-dir ComfyUI/models --local-dir-use-symlinks False
+# Then rename folders for clarity:
+mv ComfyUI/models/vae ComfyUI/models/minimax_vae
+mv ComfyUI/models/transformer ComfyUI/models/minimax_transformer
+mv ComfyUI/models/scheduler ComfyUI/models/minimax_scheduler
 ```
 
 **📋 For detailed setup instructions, see [`AUTO_DOWNLOAD_GUIDE.md`](./AUTO_DOWNLOAD_GUIDE.md)**
@@ -209,14 +237,20 @@ The node now handles **any resolution input** with **automatic compatibility**:
    VAE-compatible target: 1920x1088
    Resizing masks: 1024x576 -> 1920x1088
 
-🎉 Models downloaded successfully!
+🎉 Models downloaded successfully with descriptive names!
+📁 MiniMax VAE: D:\ComfyUI\custom_nodes\MiniMax-Remover\models\minimax_vae
+📁 MiniMax Transformer: D:\ComfyUI\custom_nodes\MiniMax-Remover\models\minimax_transformer
+📁 MiniMax Scheduler: D:\ComfyUI\custom_nodes\MiniMax-Remover\models\minimax_scheduler
 ✅ Processing complete - perfect results!
 ```
 
 #### **Subsequent Uses (Instant)**
 ```
 🔍 Checking for MiniMax-Remover models...
-✅ Found existing models at: ./models
+✅ Found existing models at: D:\ComfyUI\custom_nodes\MiniMax-Remover\models (descriptive names)
+   VAE: D:\ComfyUI\custom_nodes\MiniMax-Remover\models\minimax_vae
+   Transformer: D:\ComfyUI\custom_nodes\MiniMax-Remover\models\minimax_transformer
+   Scheduler: D:\ComfyUI\custom_nodes\MiniMax-Remover\models\minimax_scheduler
 ✅ BMO MiniMax-Remover models loaded successfully!
 🚀 Processing your video...
 ```
@@ -278,6 +312,8 @@ pip install "torch>=2.0.0,<2.5.0" "torchvision>=0.15.0,<0.20.0"
 
 ## 📁 **Project Structure**
 
+The MiniMax-Remover models can be stored in two different locations. Check both locations to find your models:
+
 ```
 MiniMax-Remover/
 ├── 📄 README.md (this file)
@@ -285,10 +321,10 @@ MiniMax-Remover/
 ├── 🔧 pipeline_minimax_remover_bmo.py (processing pipeline)
 ├── 🔧 transformer_minimax_remover.py (model architecture)
 ├── 📦 requirements.txt (dependencies)
-├── 📁 models/ (auto-downloaded models)
-│   ├── vae/
-│   ├── transformer/
-│   └── scheduler/
+├── 📁 models/ (auto-downloaded models with descriptive names)
+│   ├── minimax_vae/ (VAE encoder/decoder)
+│   ├── minimax_transformer/ (main diffusion model)
+│   └── minimax_scheduler/ (denoising scheduler)
 ├── 📋 Documentation/
 │   ├── AUTO_DOWNLOAD_GUIDE.md
 │   ├── TENSOR_DIMENSION_FIX_GUIDE.md
@@ -299,6 +335,27 @@ MiniMax-Remover/
     ├── download_models.py
     ├── setup_comfyui_integration_bmo.py
     └── fix_comfyui_diffusers.py
+```
+
+### **Option 2: ComfyUI Models Directory Structure (Alternative)**
+```
+ComfyUI/
+├── models/
+│   ├── checkpoints/ (Stable Diffusion models)
+│   ├── vae/ (Standard VAE models)  
+│   ├── loras/ (LoRA models)
+│   ├── minimax_vae/ (🎯 MiniMax VAE - auto-downloaded here)
+│   ├── minimax_transformer/ (🎯 MiniMax Transformer - auto-downloaded here)
+│   └── minimax_scheduler/ (🎯 MiniMax Scheduler - auto-downloaded here)
+└── custom_nodes/
+    └── MiniMax-Remover/
+        ├── 📄 README.md
+        ├── 🔧 minimax_mask_node_bmo.py
+        ├── 🔧 pipeline_minimax_remover_bmo.py
+        └── 📦 requirements.txt
+```
+
+**💡 Tip**: When the node runs, it will display the **actual local paths** where your models are found, so you'll know exactly which location is being used.
 
 ---
 

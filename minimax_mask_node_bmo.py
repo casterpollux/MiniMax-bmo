@@ -137,19 +137,39 @@ class MinimaxRemoverBMONode:
             Path.home() / ".cache" / "minimax-remover"
         ]
         
-        # Check if models already exist
+        # Check if models already exist (try both old and new naming)
         for base_path in possible_locations:
-            vae_path = base_path / "vae"
-            transformer_path = base_path / "transformer" 
-            scheduler_path = base_path / "scheduler"
+            # Try new descriptive names first
+            vae_path = base_path / "minimax_vae"
+            transformer_path = base_path / "minimax_transformer" 
+            scheduler_path = base_path / "minimax_scheduler"
             
             if (vae_path.exists() and transformer_path.exists() and scheduler_path.exists() and
                 (vae_path / "config.json").exists() and 
                 (transformer_path / "config.json").exists() and
                 (scheduler_path / "scheduler_config.json").exists()):
                 
-                print(f"✅ Found existing models at: {base_path}")
+                print(f"✅ Found existing models at: {os.path.abspath(base_path)} (descriptive names)")
+                print(f"   VAE: {os.path.abspath(vae_path)}")
+                print(f"   Transformer: {os.path.abspath(transformer_path)}")
+                print(f"   Scheduler: {os.path.abspath(scheduler_path)}")
                 return str(vae_path), str(transformer_path), str(scheduler_path)
+            
+            # Fallback to old generic names for backward compatibility
+            vae_path_old = base_path / "vae"
+            transformer_path_old = base_path / "transformer" 
+            scheduler_path_old = base_path / "scheduler"
+            
+            if (vae_path_old.exists() and transformer_path_old.exists() and scheduler_path_old.exists() and
+                (vae_path_old / "config.json").exists() and 
+                (transformer_path_old / "config.json").exists() and
+                (scheduler_path_old / "scheduler_config.json").exists()):
+                
+                print(f"✅ Found existing models at: {os.path.abspath(base_path)} (legacy names)")
+                print(f"   VAE: {os.path.abspath(vae_path_old)}")
+                print(f"   Transformer: {os.path.abspath(transformer_path_old)}")
+                print(f"   Scheduler: {os.path.abspath(scheduler_path_old)}")
+                return str(vae_path_old), str(transformer_path_old), str(scheduler_path_old)
         
         if not force_download:
             print("📥 Models not found locally. Starting automatic download...")
@@ -176,25 +196,51 @@ class MinimaxRemoverBMONode:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "huggingface_hub"])
                 from huggingface_hub import snapshot_download
             
-            # Download with progress
+            # Download with progress to temporary location first
+            temp_download = download_base / "_temp_download"
             snapshot_download(
                 repo_id="zibojia/minimax-remover",
-                local_dir=str(download_base),
+                local_dir=str(temp_download),
                 local_dir_use_symlinks=False,
                 allow_patterns=["vae/*", "transformer/*", "scheduler/*"],
                 ignore_patterns=["*.git*", "README.md", "*.txt"]
             )
             
-            # Verify download
-            vae_path = download_base / "vae"
-            transformer_path = download_base / "transformer"
-            scheduler_path = download_base / "scheduler"
+            # Move to descriptive folder names
+            import shutil
+            
+            vae_path = download_base / "minimax_vae"
+            transformer_path = download_base / "minimax_transformer"
+            scheduler_path = download_base / "minimax_scheduler"
+            
+            # Move downloaded folders to descriptive names
+            if (temp_download / "vae").exists():
+                if vae_path.exists():
+                    shutil.rmtree(vae_path)
+                shutil.move(str(temp_download / "vae"), str(vae_path))
+                print(f"📁 Moved VAE to: {vae_path}")
+            
+            if (temp_download / "transformer").exists():
+                if transformer_path.exists():
+                    shutil.rmtree(transformer_path)
+                shutil.move(str(temp_download / "transformer"), str(transformer_path))
+                print(f"📁 Moved Transformer to: {transformer_path}")
+            
+            if (temp_download / "scheduler").exists():
+                if scheduler_path.exists():
+                    shutil.rmtree(scheduler_path)
+                shutil.move(str(temp_download / "scheduler"), str(scheduler_path))
+                print(f"📁 Moved Scheduler to: {scheduler_path}")
+            
+            # Clean up temp directory
+            if temp_download.exists():
+                shutil.rmtree(temp_download)
             
             if (vae_path.exists() and transformer_path.exists() and scheduler_path.exists()):
-                print("🎉 Models downloaded successfully!")
-                print(f"📁 VAE: {vae_path}")
-                print(f"📁 Transformer: {transformer_path}")  
-                print(f"📁 Scheduler: {scheduler_path}")
+                print("🎉 Models downloaded successfully with descriptive names!")
+                print(f"📁 MiniMax VAE: {os.path.abspath(vae_path)}")
+                print(f"📁 MiniMax Transformer: {os.path.abspath(transformer_path)}")  
+                print(f"📁 MiniMax Scheduler: {os.path.abspath(scheduler_path)}")
                 return str(vae_path), str(transformer_path), str(scheduler_path)
             else:
                 raise Exception("Download completed but models not found in expected locations")
@@ -204,10 +250,11 @@ class MinimaxRemoverBMONode:
             print("\n🔧 Manual download options:")
             print("1. Run: python download_models.py")
             print("2. Run: huggingface-cli download zibojia/minimax-remover --local-dir ./models")
-            print("3. See MODEL_DOWNLOAD_GUIDE.md for detailed instructions")
+            print("3. Then rename folders: vae->minimax_vae, transformer->minimax_transformer, scheduler->minimax_scheduler")
+            print("4. See MODEL_DOWNLOAD_GUIDE.md for detailed instructions")
             
-            # Return default paths so user can manually configure
-            return "models/vae/", "models/transformer/", "models/scheduler/"
+            # Return default paths so user can manually configure (using descriptive names)
+            return "models/minimax_vae/", "models/minimax_transformer/", "models/minimax_scheduler/"
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -281,19 +328,25 @@ class MinimaxRemoverBMONode:
         
         # If absolute path and exists, use it
         if path.is_absolute() and path.exists():
-            print(f"✅ Using absolute path for {model_type}: {path}")
+            print(f"✅ Using absolute path for {model_type}: {os.path.abspath(path)}")
             return str(path)
         
         # Try relative to ComfyUI base
         comfyui_relative = Path(comfyui_base) / model_path
         if comfyui_relative.exists():
-            print(f"✅ Using ComfyUI relative path for {model_type}: {comfyui_relative}")
+            print(f"✅ Using ComfyUI relative path for {model_type}: {os.path.abspath(comfyui_relative)}")
             return str(comfyui_relative)
         
-        # Try in ComfyUI models directory
+        # Try in ComfyUI models directory (descriptive names first)
+        models_path_descriptive = self.comfyui_models_path / f"minimax_{model_type}"
+        if models_path_descriptive.exists():
+            print(f"✅ Using ComfyUI models path for {model_type}: {os.path.abspath(models_path_descriptive)}")
+            return str(models_path_descriptive)
+        
+        # Fallback to generic names for backward compatibility
         models_path = self.comfyui_models_path / model_type
         if models_path.exists():
-            print(f"✅ Using ComfyUI models path for {model_type}: {models_path}")
+            print(f"✅ Using ComfyUI models path for {model_type}: {os.path.abspath(models_path)} (legacy)")
             return str(models_path)
         
         # Try original path as-is (fallback)
@@ -309,6 +362,7 @@ class MinimaxRemoverBMONode:
         print("🔄 Loading BMO MiniMax-Remover models...")
         print(f"🗂️ ComfyUI base path: {comfyui_base}")
         print(f"🗂️ ComfyUI models path: {self.comfyui_models_path}")
+        print(f"📍 Current working directory: {os.getcwd()}")
         
         # Handle auto-download and path resolution
         if auto_download and (vae_path == "auto" or transformer_path == "auto" or scheduler_path == "auto"):
@@ -325,9 +379,9 @@ class MinimaxRemoverBMONode:
                     scheduler_path = auto_scheduler
                     
                 print(f"🎯 Auto-resolved paths:")
-                print(f"   VAE: {vae_path}")
-                print(f"   Transformer: {transformer_path}")
-                print(f"   Scheduler: {scheduler_path}")
+                print(f"   VAE: {os.path.abspath(vae_path)}")
+                print(f"   Transformer: {os.path.abspath(transformer_path)}")
+                print(f"   Scheduler: {os.path.abspath(scheduler_path)}")
                 
             except Exception as e:
                 print(f"⚠️ Auto-download failed, falling back to manual paths: {e}")
