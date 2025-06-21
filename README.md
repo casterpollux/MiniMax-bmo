@@ -14,12 +14,13 @@
 
 ### ✨ **Latest Enhancements**
 - ✅ **Auto-Download Models**: Zero-configuration setup - models download automatically on first use
-- ✅ **Universal Resolution Support**: Works with ANY resolution input (480p to 4K+)
+- ✅ **Universal Resolution Support**: Works with ANY resolution input (480p to 4K+) 
 - ✅ **Smart VAE Compatibility**: Automatic dimension adjustment for perfect compatibility
 - ✅ **OpenCV Conflict Resolution**: No more OpenCV reinstallation issues
 - ✅ **DW Preprocessor Compatibility**: Works seamlessly with DWPose and other preprocessors
 - ✅ **Tensor Dimension Fixes**: Eliminates all dimension mismatch errors
 - ✅ **Professional Quality**: Proper VAE normalization for natural, high-quality results
+- ⚠️Pending GPU times will vary dramatically. 720p runs on an A6000 in about 2-3 minutes. Vertical formats and the larger the area to inpaint will increase time to process
 
 ### 🎮 **Core Features**
 - **Fast**: Only 6-12 inference steps, highly optimized
