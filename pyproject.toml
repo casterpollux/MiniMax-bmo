@@ -1,10 +1,21 @@
+# BMO MiniMax-Remover for ComfyUI
+# 
+# IMPORTANT: This package requires PyTorch with CUDA support!
+# 
+# For CUDA installation (recommended):
+#   pip install -r requirements.txt
+# 
+# For manual CUDA installation:
+#   pip install torch>=2.0.0,<2.8.0 torchvision>=0.15.0,<0.20.0 --index-url https://download.pytorch.org/whl/cu121
+#   pip install -e .
+
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "comfyui-minimax-remover"
-description = "High-quality video object removal for ComfyUI using MiniMax optimization"
+description = "High-quality video object removal for ComfyUI using MiniMax optimization. Requires PyTorch with CUDA support - install from requirements.txt for CUDA compatibility."
 version = "1.0.0"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -26,8 +37,6 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-    "torch>=2.0.0,<2.5.0",
-    "torchvision>=0.15.0,<0.20.0",
     "diffusers>=0.21.0",
     "transformers>=4.25.0",
     "numpy>=1.24.0",
@@ -39,6 +48,16 @@ dependencies = [
     "scipy>=1.9.0",
     "einops>=0.6.0",
     "accelerate>=0.20.0"
+]
+
+[project.optional-dependencies]
+cuda = [
+    "torch>=2.0.0,<2.8.0",
+    "torchvision>=0.15.0,<0.20.0"
+]
+cpu = [
+    "torch>=2.0.0,<2.8.0",
+    "torchvision>=0.15.0,<0.20.0"
 ]
 
 [project.urls]

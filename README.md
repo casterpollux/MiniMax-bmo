@@ -42,6 +42,7 @@
 cd ComfyUI/custom_nodes
 git clone https://github.com/CasterPollux/MiniMax-Remover.git
 cd MiniMax-Remover
+# Install with CUDA support (recommended)
 pip install -r requirements.txt
 ```
 
@@ -235,10 +236,20 @@ python download_models.py
 huggingface-cli download zibojia/minimax-remover --local-dir ./models
 ```
 
+#### **PyTorch CUDA Issues**
+```bash
+# If PyTorch gets downgraded to CPU version during installation:
+# 1. Reinstall PyTorch with CUDA support first
+pip install torch>=2.0.0,<2.8.0 torchvision>=0.15.0,<0.20.0 --index-url https://download.pytorch.org/whl/cu121
+
+# 2. Then install other dependencies
+pip install -r requirements.txt --no-deps --force-reinstall diffusers transformers accelerate
+```
+
 #### **OpenCV Conflicts**
 ```bash
 # Install with compatible versions
-pip install -r requirements_bmo.txt
+pip install -r requirements.txt
 
 # If issues persist, see INSTALLATION_GUIDE_OPENCV_FIX.md
 ```
