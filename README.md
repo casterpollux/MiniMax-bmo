@@ -44,7 +44,7 @@
 ### **Method 1: ComfyUI Manager (Recommended)**
 1. Open ComfyUI Manager
 2. Click "Install Custom Nodes"
-3. Search for "MiniMax-Remover"
+3. Search for "MiniMax-bmo"
 4. Click Install and restart ComfyUI
 
 ### **Method 2: Manual Installation**
