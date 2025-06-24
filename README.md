@@ -50,7 +50,7 @@
 ### **Method 2: Manual Installation**
 ```bash
 cd ComfyUI/custom_nodes
-git clone https://github.com/CasterPollux/MiniMax-Remover.git
+git clone https://github.com/CasterPollux/MiniMax-bmo.git
 cd MiniMax-Remover
 # Install with CUDA support (recommended)
 pip install -r requirements.txt
@@ -80,11 +80,11 @@ When you first use the node:
 ```
 
 ### **Model Download Details**
-- **Total Size**: ~25-30 GB (one-time download)
+- **Total Size**: ~2-3 GB (one-time download)
 - **Components**: 
-  - VAE (~3GB) - Video encoding/decoding
-  - Transformer (~25GB) - Main diffusion model
-  - Scheduler (~1KB) - Denoising control
+  - VAE (~500mb) - Video encoding/decoding
+  - Transformer (~2GB) - Main diffusion model
+  - Scheduler (~1KB) - Denoising control (json only)
 - **Source**: [HuggingFace: zibojia/minimax-remover](https://huggingface.co/zibojia/minimax-remover)
 
 ### **Storage Locations (Auto-Detected)**
